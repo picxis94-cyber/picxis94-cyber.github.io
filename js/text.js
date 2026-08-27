@@ -130,10 +130,6 @@ window.BLOG_TEXT = {
 
   "giscusPending": "评论系统待配置：运行 <code>node tools/setup-github.mjs</code> 自动填入即可。",
 
-  "sysBanner": [
-    "评论 @Giscus · 统计 @GoatCounter"
-  ],
-
   "a11ySearch": "搜索",
   "a11yTheme": "切换主题（T）",
   "a11yHelp": "快捷键",
@@ -142,3 +138,4 @@ window.BLOG_TEXT = {
   "a11yRss": "RSS 订阅",
   "a11yClear": "清除搜索"
 };
+

@@ -958,14 +958,6 @@ function startNF() {
 }
 function stopNF() { if (nfRAF) { cancelAnimationFrame(nfRAF); nfRAF = null; } }
 
-/* ---------- 系统横幅 ---------- */
-function initSysBanner() {
-  const el = $('#sysText');
-  const lines = T().sysBanner && T().sysBanner.length ? T().sysBanner : ['FLOWFIELD ONLINE'];
-  let i = 0;
-  setInterval(() => { i = (i + 1) % lines.length; el.textContent = lines[i]; }, 4200);
-}
-
 /* ---------- 启动 ---------- */
 function init() {
   applyText();
@@ -984,7 +976,6 @@ function init() {
   initCursor();
   initGoatCounter();
   initRss();
-  initSysBanner();
   updateFavUI();
   navigateFromHash();
   observeReveals();
