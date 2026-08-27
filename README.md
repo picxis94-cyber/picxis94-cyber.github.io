@@ -68,7 +68,7 @@ console.log('hello');
 
 ## 自定义
 
-- **背景粒子数量**：`js/main.js` 里 `initParticles()`，调 `Math.min(420, ...)` 里的数字。
+- **背景粒子**：`js/main.js` 里 `initParticles()` 调数量，`fieldAngle()`/`updateParticle()` 调风速与轨迹长度（`TRAIL`）。
 - **配色 / 主题**：`css/style.css` 顶部的 `:root` 和 `[data-theme="light"]` 变量。
 - **站点标题**：`index.html` 的 `<title>`。
 

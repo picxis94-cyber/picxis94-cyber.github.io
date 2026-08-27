@@ -104,30 +104,32 @@ const field = (() => {
     const accent = Math.random() < 0.26;
     const c = accent ? P[1 + Math.floor(Math.random() * (P.length - 1))] : P[0];
     return {
-      x: Math.random() * W, y: Math.random() * H, px: 0, py: 0,
-      speed: 0.35 + Math.random() * 0.85,
-      size: accent ? 1.3 : 1,
+      x: Math.random() * W, y: Math.random() * H,
+      hist: [],                                   // 轨迹点 → 画成连贯长线
+      speed: 2.2 + Math.random() * 1.6,           // 风速：明显加快
       r: c[0], g: c[1], b: c[2],
-      alpha: accent ? 0.45 + Math.random() * 0.5 : 0.14 + Math.random() * 0.28,
+      alpha: accent ? 0.6 + Math.random() * 0.3 : 0.28 + Math.random() * 0.24,
     };
   };
 
   function initParticles() {
-    const n = W * H < 600000 ? 1600 : Math.min(4200, Math.round((W * H) / 560));
+    const n = W * H < 600000 ? 160 : Math.min(500, Math.round((W * H) / 4200));
     const P = pal();
     particles = Array.from({ length: n }, () => makeParticle(P));
     const el = $('#particleCount');
     if (el) el.textContent = tt('particles', { n });
   }
 
+  const TRAIL = 16;   // 每条线保留的轨迹长度
+
   const fieldAngle = (x, y, t) => {
-    const n = noise.noise2D(x * 0.0015, y * 0.0015 + t * 0.00014);
-    return n * Math.PI * 2.2 + Math.sin(t * 0.00003) * 0.4;
+    // 大尺度平滑 + 基准风向（+0.5 偏东）+ 缓慢漂移 → 成片流动而非乱窜
+    const n = noise.noise2D(x * 0.0009, y * 0.0009 + t * 0.00022);
+    return n * Math.PI * 1.6 + 0.5 + Math.sin(t * 0.00006) * 0.4;
   };
   const influence = (d, R) => { if (d > R) return 0; const f = 1 - d / R; return f * f; };
 
   function updateParticle(p, t) {
-    p.px = p.x; p.py = p.y;
     const ang = fieldAngle(p.x, p.y, t);
     let vx = Math.cos(ang) * p.speed;
     let vy = Math.sin(ang) * p.speed;
@@ -155,6 +157,8 @@ const field = (() => {
       if (band < 130) { const f = (1 - band / 130) * sh.power; vx += (dx / d) * f * 2.4; vy += (dy / d) * f * 2.4; }
     }
     p.x += vx; p.y += vy;
+    p.hist.push(p.x, p.y);
+    if (p.hist.length > TRAIL * 2) p.hist.splice(0, p.hist.length - TRAIL * 2);
 
     const m = 40;
     if (p.x < -m || p.x > W + m || p.y < -m || p.y > H + m) {
@@ -163,6 +167,8 @@ const field = (() => {
       else if (side === 1) { p.x = Math.random() * W; p.y = H + m; }
       else if (side === 2) { p.x = -m; p.y = Math.random() * H; }
       else { p.x = W + m; p.y = Math.random() * H; }
+      p.hist.length = 0;
+      p.hist.push(p.x, p.y);
     }
   }
 
@@ -170,7 +176,7 @@ const field = (() => {
     ctx.clearRect(0, 0, W, H);
     ctx.lineCap = 'round';
     ctx.lineWidth = 1;
-    // 按颜色批量绘制：4200 条线段也只需 5~6 次 stroke
+    // 按颜色批量绘制：大量轨迹线只需 5~6 次 stroke
     const buckets = new Map();
     for (const p of particles) {
       const key = (p.r << 16) | (p.g << 8) | p.b;
@@ -182,24 +188,27 @@ const field = (() => {
       ctx.globalAlpha = b.a / b.pts.length;
       ctx.strokeStyle = `rgb(${b.r},${b.g},${b.b})`;
       ctx.beginPath();
-      for (const p of b.pts) { ctx.moveTo(p.px, p.py); ctx.lineTo(p.x, p.y); }
+      for (const p of b.pts) {
+        const h = p.hist;
+        if (h.length < 4) continue;
+        ctx.moveTo(h[0], h[1]);
+        for (let i = 2; i < h.length; i += 2) ctx.lineTo(h[i], h[i + 1]);
+      }
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
-    // 风眼指示圈：慢速闪烁 + 鼠标停止移动后淡出（不一直闪）
+    // 风眼指示圈：鼠标活跃时清晰可见，停住后淡出
     if (mouse.active) {
       const idle = Math.max(0, 1 - (performance.now() - mouse.lastMove) / 1400);
-      const blink = 0.55 + 0.45 * Math.sin(performance.now() * 0.0022);
-      const a = idle * blink;
-      if (a > 0.05) {
+      if (idle > 0.02) {
         const R = Math.min(W, H) * 0.34;
-        ctx.globalAlpha = 0.35 * a;
+        ctx.globalAlpha = 0.4 * idle;
         ctx.strokeStyle = 'rgba(94,234,212,.55)';
         ctx.setLineDash([2, 8]);
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.arc(mouse.x, mouse.y, R, 0, Math.PI * 2); ctx.stroke();
         ctx.setLineDash([]);
-        ctx.globalAlpha = 0.85 * a;
+        ctx.globalAlpha = 0.9 * idle;
         ctx.strokeStyle = 'rgba(94,234,212,.95)';
         ctx.beginPath(); ctx.arc(mouse.x, mouse.y, 2.5, 0, Math.PI * 2); ctx.stroke();
       }
