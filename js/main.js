@@ -83,7 +83,7 @@ const field = (() => {
   };
 
   function initParticles() {
-    const n = W * H < 600000 ? 90 : Math.min(230, Math.round((W * H) / 8200));
+    const n = W * H < 600000 ? 160 : Math.min(420, Math.round((W * H) / 5600));
     const P = pal();
     particles = Array.from({ length: n }, () => makeParticle(P));
     const el = $('#particleCount');
