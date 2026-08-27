@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>我的博客</title>
+    <link>https://picxis94-cyber.github.io/</link>
+    <description>一个用于存放文章的个人博客。</description>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 27 Aug 2026 05:18:00 GMT</lastBuildDate>
+    <item>
+  <title>从零写一个风场粒子引擎</title>
+  <link>https://picxis94-cyber.github.io/#/post/flow-field-engine</link>
+  <guid>https://picxis94-cyber.github.io/#/post/flow-field-engine</guid>
+  <pubDate>Thu, 20 Aug 2026 00:00:00 GMT</pubDate>
+  <description>台风眼是怎么形成的？这篇文章用一个 Canvas + Simplex Noise 的流场引擎，解释如何让数千颗粒子随&quot;风&quot;起舞，并让鼠标变成风暴之眼。</description>
+</item>
+  <item>
+  <title>Go 并发三板斧：goroutine、channel、select</title>
+  <link>https://picxis94-cyber.github.io/#/post/go-concurrency-notes</link>
+  <guid>https://picxis94-cyber.github.io/#/post/go-concurrency-notes</guid>
+  <pubDate>Sat, 15 Aug 2026 00:00:00 GMT</pubDate>
+  <description>不要通过共享内存来通信，而要通过通信来共享内存。用三个核心原语拆解 Go 的并发心智模型。</description>
+</item>
+  <item>
+  <title>PostgreSQL 索引漫谈：从 B-Tree 到 BRIN</title>
+  <link>https://picxis94-cyber.github.io/#/post/postgres-index-notes</link>
+  <guid>https://picxis94-cyber.github.io/#/post/postgres-index-notes</guid>
+  <pubDate>Mon, 10 Aug 2026 00:00:00 GMT</pubDate>
+  <description>什么时候该建索引？B-Tree、GIN、BRIN 各自适合什么场景？一篇帮你建立索引直觉的漫谈。</description>
+</item>
+  <item>
+  <title>深色界面的设计原则：暗，但别瞎</title>
+  <link>https://picxis94-cyber.github.io/#/post/dark-interface-design</link>
+  <guid>https://picxis94-cyber.github.io/#/post/dark-interface-design</guid>
+  <pubDate>Thu, 06 Aug 2026 00:00:00 GMT</pubDate>
+  <description>深色模式不是把白色背景翻成黑底就完事了。层次、色彩、阴影、对比度，处处是反直觉的细节。</description>
+</item>
+  <item>
+  <title>极简博客的心智模型：没有后端的博客也是博客</title>
+  <link>https://picxis94-cyber.github.io/#/post/static-site-mental-model</link>
+  <guid>https://picxis94-cyber.github.io/#/post/static-site-mental-model</guid>
+  <pubDate>Thu, 30 Jul 2026 00:00:00 GMT</pubDate>
+  <description>一个不需要数据库、不需要服务器、双击 index.html 就能跑的博客，是怎么组织数据流的？</description>
+</item>
+  <item>
+  <title>代码即诗歌：写给十年后自己的三句话</title>
+  <link>https://picxis94-cyber.github.io/#/post/poetry-of-code</link>
+  <guid>https://picxis94-cyber.github.io/#/post/poetry-of-code</guid>
+  <pubDate>Sat, 18 Jul 2026 00:00:00 GMT</pubDate>
+  <description>在无数个深夜修 bug 之后，我越来越觉得：好的代码和好的诗，底层是同一件事。</description>
+</item>
+  </channel>
+</rss>
