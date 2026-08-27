@@ -12,7 +12,7 @@ window.BLOG_TEXT = {
   "navTimeline": "时间线",
   "navFavorites": "收藏",
 
-  "heroBadge": "FLOWFIELD ONLINE",
+  "heroBadge": "404 NOTFOUND(?)",
   "heroHi": "This is",
   "heroName": "NoOneComes",
   "heroSubInit": "这里是我的碎碎念 喵~",
@@ -108,7 +108,7 @@ window.BLOG_TEXT = {
   "nfMsg": "页面不存在了，换个地址试试。",
   "nfHome": "回到首页",
 
-  "statusField": "粒子风场 · 风眼: ",
+  "statusField": "按alt+F4进入开发者模式 ",
   "statusCredit": "评论 @Giscus · 统计 @GoatCounter",
   "statusRss": "RSS ↗",
   "statusArticles": "文章",
@@ -131,9 +131,6 @@ window.BLOG_TEXT = {
   "giscusPending": "评论系统待配置：运行 <code>node tools/setup-github.mjs</code> 自动填入即可。",
 
   "sysBanner": [
-    "FLOWFIELD ONLINE",
-    "粒子数随屏幕自适应",
-    "博客已上线，欢迎访问",
     "评论 @Giscus · 统计 @GoatCounter"
   ],
 
