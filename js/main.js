@@ -177,7 +177,7 @@ const field = (() => {
     for (const p of particles) updateParticle(p, t);
     draw();
     const eye = $('#eyeState');
-    if (eye) eye.textContent = mouse.active ? 'LOCK' : 'STANDBY';
+    if (eye) eye.textContent = mouse.active ? '锁定' : '待机';
     requestAnimationFrame(frame);
   }
 
@@ -300,10 +300,10 @@ const typewriter = {
     this.line.textContent = '';
     this.typeInto(this.line, full, 38);
     this.cycle([
-      'PROMPT> 正在编译思想模块…',
-      '输入你的好奇心，按下回车_',
-      'LET CODE SPEAK FOR YOU.',
-      '信号源：地球 · 风眼坐标已锁定',
+      '记录代码、设计与生活的手记。',
+      '按 / 搜索文章 · 按 ? 查看快捷键',
+      '写点东西，也写点代码。',
+      '文章都在下面，慢慢看。',
     ]);
   },
   typeInto(el, text, speed) {
@@ -940,10 +940,10 @@ function stopNF() { if (nfRAF) { cancelAnimationFrame(nfRAF); nfRAF = null; } }
 function initSysBanner() {
   const el = $('#sysText');
   const lines = [
-    'SYSTEM.INIT // FLOWFIELD ONLINE',
-    'VORTEX: 台风眼半径已锁定',
-    '粒子数: 自适应 · 每秒 60 FPS',
-    '心态稳定 · 随时可写',
+    'FLOWFIELD ONLINE',
+    '粒子数随屏幕自适应',
+    '博客已上线，欢迎访问',
+    '评论 @Giscus · 统计 @GoatCounter',
   ];
   let i = 0;
   setInterval(() => { i = (i + 1) % lines.length; el.textContent = lines[i]; }, 4200);
