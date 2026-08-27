@@ -396,6 +396,10 @@ function renderCards() {
   const empty = $('#emptyState');
   grid.innerHTML = list.map((a) => cardHTML(a, favs().includes(a.id))).join('');
   empty.hidden = list.length > 0;
+  const msg = empty.querySelector('p');
+  msg.textContent = state.articles.length === 0
+    ? '这里还没有文章。把 Markdown 放进 articles/ 目录，运行 node tools/gen.mjs 即可发布。'
+    : '没有匹配的文章，换个关键词试试？';
   $('#resultCount').textContent = `${list.length} / ${state.articles.length}`;
   bindCards(grid);
 }
@@ -497,6 +501,10 @@ function initToolbar() {
 function renderTimeline() {
   const tl = $('#timeline');
   const list = sorted(state.articles.filter((a) => !state.query || (a.title + a.body + a.excerpt + a.tags.join('')).toLowerCase().includes(state.query.toLowerCase())));
+  if (!list.length) {
+    tl.innerHTML = `<p style="color:var(--text-faint);text-align:center;padding:60px 0;font-size:14px">时间线还是空的，等你写下第一篇文章。</p>`;
+    return;
+  }
   tl.innerHTML = list.map((a) => `
     <div class="tl-item reveal">
       <span class="tl-dot"></span>
