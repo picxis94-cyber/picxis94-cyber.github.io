@@ -9,6 +9,7 @@ blog/
 ├── index.html          # 唯一入口（页面结构）
 ├── css/style.css       # 样式（主题、配色都在这）
 ├── js/
+│   ├── text.js         # ★ 全站文案都在这里（JSON），改它就改字
 │   ├── main.js         # 逻辑（风场粒子、路由、搜索、渲染…）
 │   ├── articles-data.js# 文章数据（由 gen.mjs 自动生成，勿手改）
 │   └── lib/            # marked / highlight.js（离线渲染用，勿动）
@@ -18,6 +19,10 @@ blog/
     ├── gen.mjs         # ★ 生成文章数据 + RSS
     └── setup-github.mjs# 一键部署到 GitHub Pages
 ```
+
+## 改文字
+
+所有页面文字（导航、标题、按钮、空状态、快捷键说明、状态栏…）都在 **`js/text.js`** 里，标准 JSON 对象。直接改那个文件，保存后刷新页面即生效，不用重新生成、不用重新部署源码。改完记得把 `index.html` 里的 `?v=6` 版本号 +1 再推送。
 
 ## 发布一篇文章
 

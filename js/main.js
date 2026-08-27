@@ -17,6 +17,36 @@ const sess = {
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isTouch = window.matchMedia('(hover: none), (max-width: 820px)').matches;
 
+/* ---------- 文案（js/text.js） ---------- */
+const T = () => window.BLOG_TEXT || {};
+const tt = (key, vars) => {
+  let s = T()[key];
+  if (s == null) s = '';
+  s = String(s);
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, v);
+  return s;
+};
+
+/* 用 BLOG_TEXT 覆盖页面里所有 data-text / data-ph / data-aria 元素 */
+function applyText() {
+  const t = T();
+  if (t.title) document.title = t.title;
+  if (t.metaDesc) document.querySelector('meta[name="description"]').setAttribute('content', t.metaDesc);
+  $$('[data-text]').forEach((el) => {
+    const k = el.dataset.text;
+    if (t[k] == null) return;
+    const v = String(t[k]);
+    if (k === 'brand') {
+      const parts = v.split('.');
+      el.innerHTML = parts.join('<span class="brand-dot">.</span>');
+      return;
+    }
+    el.textContent = v;
+  });
+  $$('[data-ph]').forEach((el) => { if (t[el.dataset.ph] != null) el.placeholder = t[el.dataset.ph]; });
+  $$('[data-aria]').forEach((el) => { if (t[el.dataset.aria] != null) el.setAttribute('aria-label', t[el.dataset.aria]); });
+}
+
 /* ---------- 2D Simplex Noise ---------- */
 class SimplexNoise {
   constructor(seed = 0x5eed) {
@@ -87,7 +117,7 @@ const field = (() => {
     const P = pal();
     particles = Array.from({ length: n }, () => makeParticle(P));
     const el = $('#particleCount');
-    if (el) el.textContent = `${n} PARTICLES`;
+    if (el) el.textContent = tt('particles', { n });
   }
 
   const fieldAngle = (x, y, t) => {
@@ -177,7 +207,7 @@ const field = (() => {
     for (const p of particles) updateParticle(p, t);
     draw();
     const eye = $('#eyeState');
-    if (eye) eye.textContent = mouse.active ? '锁定' : '待机';
+    if (eye) eye.textContent = mouse.active ? tt('eyeLock') : tt('eyeIdle');
     requestAnimationFrame(frame);
   }
 
@@ -296,15 +326,11 @@ const typewriter = {
     this.line = $('#typeStatic');
     this.words = $('#typeWords');
     if (!this.line || !this.words) return;
+    this.words.innerHTML = `${tt('heroSubInit')} <span class="blink">_</span>`;
     const full = this.line.textContent;
     this.line.textContent = '';
     this.typeInto(this.line, full, 38);
-    this.cycle([
-      '记录代码、设计与生活的手记。',
-      '按 / 搜索文章 · 按 ? 查看快捷键',
-      '写点东西，也写点代码。',
-      '文章都在下面，慢慢看。',
-    ]);
+    this.cycle(T().heroWords && T().heroWords.length ? T().heroWords : ['写点东西，也写点代码。']);
   },
   typeInto(el, text, speed) {
     let i = 0;
@@ -356,7 +382,7 @@ function cardHTML(a, fav, extraClass = '') {
     </div>
     <div class="card-body">
       <div class="card-meta">
-        <span>${fmtDate(a.date)}</span><span>·</span><span>${a.time} MIN</span><span>·</span><span>👁 ${viewsOf(a.id)}</span>
+        <span>${fmtDate(a.date)}</span><span>·</span><span>${a.time} ${tt('minUnit')}</span><span>·</span><span>👁 ${viewsOf(a.id)}</span>
       </div>
       <h3 class="card-title">${a.title}</h3>
       <p class="card-excerpt">${a.excerpt}</p>
@@ -397,9 +423,7 @@ function renderCards() {
   grid.innerHTML = list.map((a) => cardHTML(a, favs().includes(a.id))).join('');
   empty.hidden = list.length > 0;
   const msg = empty.querySelector('p');
-  msg.textContent = state.articles.length === 0
-    ? '这里还没有文章。把 Markdown 放进 articles/ 目录，运行 node tools/gen.mjs 即可发布。'
-    : '没有匹配的文章，换个关键词试试？';
+  msg.textContent = state.articles.length === 0 ? tt('emptyNoArticle') : tt('emptyNoMatch');
   $('#resultCount').textContent = `${list.length} / ${state.articles.length}`;
   bindCards(grid);
 }
@@ -514,7 +538,7 @@ function renderTimeline() {
   const tl = $('#timeline');
   const list = sorted(state.articles.filter((a) => !state.query || (a.title + a.body + a.excerpt + a.tags.join('')).toLowerCase().includes(state.query.toLowerCase())));
   if (!list.length) {
-    tl.innerHTML = `<p style="color:var(--text-faint);text-align:center;padding:60px 0;font-size:14px">时间线还是空的，等你写下第一篇文章。</p>`;
+    tl.innerHTML = `<p style="color:var(--text-faint);text-align:center;padding:60px 0;font-size:14px">${tt('timelineEmpty')}</p>`;
     return;
   }
   tl.innerHTML = list.map((a) => `
@@ -566,7 +590,7 @@ function renderGiscus(postId) {
   if (!box) return;
   box.innerHTML = '';
   if (!GISCUS.categoryId) {
-    box.innerHTML = `<p style="color:var(--text-faint);font-size:13px">评论系统待配置：运行 <code>node tools/setup-github.mjs</code> 自动填入即可。</p>`;
+    box.innerHTML = `<p style="color:var(--text-faint);font-size:13px">${tt('giscusPending')}</p>`;
     return;
   }
   const theme = document.documentElement.dataset.theme === 'light' ? 'transparent_light' : 'transparent_dark';
@@ -610,9 +634,9 @@ function openPost(id) {
   $('#readerTitle').textContent = a.title;
   $('#readerExcerpt').textContent = a.excerpt;
   $('#readerDate').textContent = fmtDate(a.date);
-  $('#readerTime').textContent = `${a.time} min 阅读 · ${a.words} 字`;
+  $('#readerTime').textContent = tt('readerTime', { time: a.time, words: a.words });
   $('#readerViews').textContent = viewsOf(id);
-  document.title = `${a.title} - 我的博客`;
+  document.title = `${a.title} - ${tt('title')}`;
 
   const body = $('#readerBody');
   body.innerHTML = marked.parse(a.body);
@@ -638,9 +662,9 @@ function renderReaderNav() {
   const prev = list[i + 1], next = list[i - 1];
   $('#readerNav').innerHTML = `
     ${prev ? `<a class="reader-nav-link" href="#" data-open="${prev.id}">
-      <span class="rn-kicker">← PREV</span><span class="rn-title">${prev.title}</span></a>` : '<span></span>'}
+      <span class="rn-kicker">${tt('prev')}</span><span class="rn-title">${prev.title}</span></a>` : '<span></span>'}
     ${next ? `<a class="reader-nav-link next" href="#" data-open="${next.id}">
-      <span class="rn-kicker">NEXT →</span><span class="rn-title">${next.title}</span></a>` : '<span></span>'}`;
+      <span class="rn-kicker">${tt('next')}</span><span class="rn-title">${next.title}</span></a>` : '<span></span>'}`;
   $('#readerNav').querySelectorAll('[data-open]').forEach((el) => el.addEventListener('click', (e) => { e.preventDefault(); openPost(el.dataset.open); }));
 }
 
@@ -748,7 +772,7 @@ const quickSearch = {
         <span class="q-glyph">${a.glyph}</span>
         <span class="q-title">${a.title}</span>
         <span class="q-meta">${fmtDate(a.date)} · ${a.time}min</span>
-      </div>`).join('') || `<div class="quick-item" style="cursor:default;color:var(--text-faint)">无结果</div>`;
+      </div>`).join('') || `<div class="quick-item" style="cursor:default;color:var(--text-faint)">${tt('quickEmpty')}</div>`;
     const items = box.querySelectorAll('[data-open]');
     items.forEach((it) => it.addEventListener('mousemove', () => {
       quickIndex = [...items].indexOf(it);
@@ -939,18 +963,14 @@ function stopNF() { if (nfRAF) { cancelAnimationFrame(nfRAF); nfRAF = null; } }
 /* ---------- 系统横幅 ---------- */
 function initSysBanner() {
   const el = $('#sysText');
-  const lines = [
-    'FLOWFIELD ONLINE',
-    '粒子数随屏幕自适应',
-    '博客已上线，欢迎访问',
-    '评论 @Giscus · 统计 @GoatCounter',
-  ];
+  const lines = T().sysBanner && T().sysBanner.length ? T().sysBanner : ['FLOWFIELD ONLINE'];
   let i = 0;
   setInterval(() => { i = (i + 1) % lines.length; el.textContent = lines[i]; }, 4200);
 }
 
 /* ---------- 启动 ---------- */
 function init() {
+  applyText();
   theme.init();
   initClock();
   initToolbar();
