@@ -92,7 +92,7 @@ const field = (() => {
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, particles = [];
   const noise = new SimplexNoise(0x5eed);
-  const mouse = { x: -9999, y: -9999, active: false, vx: 0, vy: 0 };
+  const mouse = { x: -9999, y: -9999, active: false, vx: 0, vy: 0, lastMove: 0 };
   const shocks = [];
   let running = true;
 
@@ -113,7 +113,7 @@ const field = (() => {
   };
 
   function initParticles() {
-    const n = W * H < 600000 ? 160 : Math.min(420, Math.round((W * H) / 5600));
+    const n = W * H < 600000 ? 1600 : Math.min(4200, Math.round((W * H) / 560));
     const P = pal();
     particles = Array.from({ length: n }, () => makeParticle(P));
     const el = $('#particleCount');
@@ -141,7 +141,7 @@ const field = (() => {
         const tx = -dy / d, ty = dx / d;          // 切向：绕鼠标旋转
         const ix = dx / d, iy = dy / d;            // 径向：指向鼠标
         const core = Math.min(1, 54 / d);          // 核心掏空 → 真正的风眼
-        const pull = 0.55 - core;
+        const pull = 0.3 - core;                    // 向心吸引力（调小 = 引力弱一些）
         vx += (tx * 2.7 + ix * pull) * p.speed * inf;
         vy += (ty * 2.7 + iy * pull) * p.speed * inf;
         vx += mouse.vx * 0.03 * inf;               // 风跟随光标运动
@@ -169,23 +169,40 @@ const field = (() => {
   function draw() {
     ctx.clearRect(0, 0, W, H);
     ctx.lineCap = 'round';
+    ctx.lineWidth = 1;
+    // 按颜色批量绘制：4200 条线段也只需 5~6 次 stroke
+    const buckets = new Map();
     for (const p of particles) {
-      ctx.globalAlpha = p.alpha;
-      ctx.strokeStyle = `rgb(${p.r},${p.g},${p.b})`;
-      ctx.lineWidth = p.size;
-      ctx.beginPath(); ctx.moveTo(p.px, p.py); ctx.lineTo(p.x, p.y); ctx.stroke();
+      const key = (p.r << 16) | (p.g << 8) | p.b;
+      let b = buckets.get(key);
+      if (!b) { b = { r: p.r, g: p.g, b: p.b, a: 0, pts: [] }; buckets.set(key, b); }
+      b.a += p.alpha; b.pts.push(p);
     }
+    for (const b of buckets.values()) {
+      ctx.globalAlpha = b.a / b.pts.length;
+      ctx.strokeStyle = `rgb(${b.r},${b.g},${b.b})`;
+      ctx.beginPath();
+      for (const p of b.pts) { ctx.moveTo(p.px, p.py); ctx.lineTo(p.x, p.y); }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    // 风眼指示圈：慢速闪烁 + 鼠标停止移动后淡出（不一直闪）
     if (mouse.active) {
-      const R = Math.min(W, H) * 0.34;
-      ctx.globalAlpha = 0.4;
-      ctx.strokeStyle = 'rgba(94,234,212,.55)';
-      ctx.setLineDash([2, 8]);
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(mouse.x, mouse.y, R, 0, Math.PI * 2); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 0.9;
-      ctx.strokeStyle = 'rgba(94,234,212,.95)';
-      ctx.beginPath(); ctx.arc(mouse.x, mouse.y, 2.5, 0, Math.PI * 2); ctx.stroke();
+      const idle = Math.max(0, 1 - (performance.now() - mouse.lastMove) / 1400);
+      const blink = 0.55 + 0.45 * Math.sin(performance.now() * 0.0022);
+      const a = idle * blink;
+      if (a > 0.05) {
+        const R = Math.min(W, H) * 0.34;
+        ctx.globalAlpha = 0.35 * a;
+        ctx.strokeStyle = 'rgba(94,234,212,.55)';
+        ctx.setLineDash([2, 8]);
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(mouse.x, mouse.y, R, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 0.85 * a;
+        ctx.strokeStyle = 'rgba(94,234,212,.95)';
+        ctx.beginPath(); ctx.arc(mouse.x, mouse.y, 2.5, 0, Math.PI * 2); ctx.stroke();
+      }
     }
     for (let i = shocks.length - 1; i >= 0; i--) {
       const sh = shocks[i];
@@ -223,10 +240,10 @@ const field = (() => {
   window.addEventListener('resize', resize);
   window.addEventListener('pointermove', (e) => {
     if (!mouse.active) { mouse.px = e.clientX; mouse.py = e.clientY; mouse.active = true; }
-    mouse.x = e.clientX; mouse.y = e.clientY;
+    mouse.x = e.clientX; mouse.y = e.clientY; mouse.lastMove = performance.now();
   }, { passive: true });
   window.addEventListener('pointerdown', (e) => {
-    shocks.push({ x: e.clientX, y: e.clientY, r: 4, vr: 7.5, power: 1 });
+    if (Math.random() < 0.3) shocks.push({ x: e.clientX, y: e.clientY, r: 4, vr: 7.5, power: 1 });
   });
   document.addEventListener('visibilitychange', () => {
     running = !document.hidden;

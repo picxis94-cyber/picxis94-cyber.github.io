@@ -3,9 +3,9 @@
    格式：标准 JSON 对象。改完刷新页面（或强刷 Ctrl+Shift+R）生效
    ============================================================ */
 window.BLOG_TEXT = {
-  "title": "我的博客",
-  "metaDesc": "一个用于存放文章的个人博客。",
-  "brand": "BLOG.ME",
+  "title": "NoOneComes's blog",
+  "metaDesc": "NoOneComes's blog",
+  "brand": "NoOneComes's blog",
 
   "navHome": "首页",
   "navArticles": "文章",
@@ -14,7 +14,7 @@ window.BLOG_TEXT = {
 
   "heroBadge": "FLOWFIELD ONLINE",
   "heroHi": "你好，我是",
-  "heroName": "无人机潜水",
+  "heroName": "NoOneComes",
   "heroSubInit": "记录代码与生活",
   "heroWords": [
     "记录代码、设计与生活的手记。",

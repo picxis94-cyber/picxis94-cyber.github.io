@@ -533,9 +533,13 @@ input,textarea{font-family:inherit;color:inherit}
   .cardgrid{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
 }
 @media (max-width:640px){
-  .nav-inner{padding:0 16px}
-  .brand-text{font-size:14px}
-  .nav-link span.nav-link-label{display:none}
+  .nav-inner{padding:0 12px;gap:6px}
+  .brand-text{font-size:11px;white-space:nowrap}
+  .brand-glyph{display:none}
+  .nav-links{gap:0;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-link{padding:8px 7px;font-size:12px}
+  .icon-btn{width:30px;height:30px}
   .hero{padding-left:18px;padding-right:18px}
   .articles{padding-left:18px;padding-right:18px}
   .hero-stats{gap:18px}
