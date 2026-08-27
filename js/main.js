@@ -86,46 +86,65 @@ class SimplexNoise {
   }
 }
 
-/* ---------- 风场粒子背景（含风眼） ---------- */
+/* ---------- 光尘背景（鼠标旋动形成风眼） ---------- */
 const field = (() => {
   const canvas = $('#field');
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, particles = [];
   const noise = new SimplexNoise(0x5eed);
-  const mouse = { x: -9999, y: -9999, active: false, vx: 0, vy: 0, lastMove: 0 };
-  const shocks = [];
+  const mouse = { x: -9999, y: -9999, active: false, lastMove: 0 };
   let running = true;
 
   const BASE = [[148, 184, 203], [94, 234, 212], [167, 139, 250], [125, 211, 252], [244, 114, 182]];
   const BASE_LIGHT = [[60, 90, 110], [13, 148, 136], [124, 58, 237], [2, 132, 199], [219, 39, 119]];
   const pal = () => (document.documentElement.dataset.theme === 'light' ? BASE_LIGHT : BASE);
+  const isLight = () => document.documentElement.dataset.theme === 'light';
+
+  // 每个颜色预渲染一张柔光贴图，绘制时用 drawImage 叠加，性能好且不糊
+  const sprites = new Map();
+  const spriteFor = (r, g, b) => {
+    const key = (r << 16) | (g << 8) | b;
+    let s = sprites.get(key);
+    if (s) return s;
+    const c = document.createElement('canvas');
+    c.width = c.height = 32;
+    const gc = c.getContext('2d');
+    const grad = gc.createRadialGradient(16, 16, 0, 16, 16, 16);
+    grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
+    grad.addColorStop(0.4, `rgba(${r},${g},${b},0.35)`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    gc.fillStyle = grad;
+    gc.fillRect(0, 0, 32, 32);
+    sprites.set(key, c);
+    return c;
+  };
 
   const makeParticle = (P) => {
-    const accent = Math.random() < 0.26;
+    const accent = Math.random() < 0.22;
     const c = accent ? P[1 + Math.floor(Math.random() * (P.length - 1))] : P[0];
     return {
       x: Math.random() * W, y: Math.random() * H,
-      hist: [],                                   // 轨迹点 → 画成连贯长线
-      speed: 2.2 + Math.random() * 1.6,           // 风速：明显加快
+      speed: accent ? 0.16 + Math.random() * 0.3 : 0.09 + Math.random() * 0.22, // 缓慢漂浮
       r: c[0], g: c[1], b: c[2],
-      alpha: accent ? 0.6 + Math.random() * 0.3 : 0.28 + Math.random() * 0.24,
+      size: accent ? 2.2 + Math.random() * 2.4 : 1 + Math.random() * 1.4,
+      alpha: accent ? 0.5 + Math.random() * 0.4 : 0.22 + Math.random() * 0.32,
+      phase: Math.random() * Math.PI * 2,
+      pulse: 0.5 + Math.random() * 0.9,          // 呼吸速度
     };
   };
 
   function initParticles() {
-    const n = W * H < 600000 ? 160 : Math.min(500, Math.round((W * H) / 4200));
+    const n = W * H < 600000 ? 90 : Math.min(220, Math.round((W * H) / 9500));
     const P = pal();
     particles = Array.from({ length: n }, () => makeParticle(P));
     const el = $('#particleCount');
     if (el) el.textContent = tt('particles', { n });
   }
 
-  const TRAIL = 16;   // 每条线保留的轨迹长度
-
   const fieldAngle = (x, y, t) => {
-    // 大尺度平滑 + 基准风向（+0.5 偏东）+ 缓慢漂移 → 成片流动而非乱窜
-    const n = noise.noise2D(x * 0.0009, y * 0.0009 + t * 0.00022);
-    return n * Math.PI * 1.6 + 0.5 + Math.sin(t * 0.00006) * 0.4;
+    // 极其缓慢的流场：微尘般自由漂浮
+    const n = noise.noise2D(x * 0.0007, y * 0.0007 + t * 0.00005);
+    return n * Math.PI * 1.2 + Math.sin(t * 0.00002) * 0.3;
   };
   const influence = (d, R) => { if (d > R) return 0; const f = 1 - d / R; return f * f; };
 
@@ -137,91 +156,48 @@ const field = (() => {
     if (mouse.active) {
       const dx = p.x - mouse.x, dy = p.y - mouse.y;
       const d = Math.hypot(dx, dy) || 1;
-      const R = Math.min(W, H) * 0.34;
+      const R = Math.min(W, H) * 0.32;
       const inf = influence(d, R);
       if (inf > 0) {
         const tx = -dy / d, ty = dx / d;          // 切向：绕鼠标旋转
         const ix = dx / d, iy = dy / d;            // 径向：指向鼠标
-        const core = Math.min(1, 54 / d);          // 核心掏空 → 真正的风眼
-        const pull = 0.3 - core;                    // 向心吸引力（调小 = 引力弱一些）
-        vx += (tx * 2.7 + ix * pull) * p.speed * inf;
-        vy += (ty * 2.7 + iy * pull) * p.speed * inf;
-        vx += mouse.vx * 0.03 * inf;               // 风跟随光标运动
-        vy += mouse.vy * 0.03 * inf;
+        const core = Math.min(1, 60 / d);          // 核心掏空 → 风眼
+        const pull = 0.22 - core;                  // 柔和牵引
+        vx += (tx * 1.6 + ix * pull) * p.speed * inf;
+        vy += (ty * 1.6 + iy * pull) * p.speed * inf;
       }
     }
-    for (const sh of shocks) {
-      const dx = p.x - sh.x, dy = p.y - sh.y;
-      const d = Math.hypot(dx, dy) || 1;
-      const band = Math.abs(d - sh.r);
-      if (band < 130) { const f = (1 - band / 130) * sh.power; vx += (dx / d) * f * 2.4; vy += (dy / d) * f * 2.4; }
-    }
     p.x += vx; p.y += vy;
-    p.hist.push(p.x, p.y);
-    if (p.hist.length > TRAIL * 2) p.hist.splice(0, p.hist.length - TRAIL * 2);
 
-    const m = 40;
+    const m = 30;
     if (p.x < -m || p.x > W + m || p.y < -m || p.y > H + m) {
       const side = (Math.random() * 4) | 0;
       if (side === 0) { p.x = Math.random() * W; p.y = -m; }
       else if (side === 1) { p.x = Math.random() * W; p.y = H + m; }
       else if (side === 2) { p.x = -m; p.y = Math.random() * H; }
       else { p.x = W + m; p.y = Math.random() * H; }
-      p.hist.length = 0;
-      p.hist.push(p.x, p.y);
     }
   }
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 1;
-    // 按颜色批量绘制：大量轨迹线只需 5~6 次 stroke
-    const buckets = new Map();
+    // 暗色下用「叠加」让光尘聚集发光；浅色下正常绘制
+    ctx.globalCompositeOperation = isLight() ? 'source-over' : 'lighter';
+    const now = performance.now();
     for (const p of particles) {
-      const key = (p.r << 16) | (p.g << 8) | p.b;
-      let b = buckets.get(key);
-      if (!b) { b = { r: p.r, g: p.g, b: p.b, a: 0, pts: [] }; buckets.set(key, b); }
-      b.a += p.alpha; b.pts.push(p);
-    }
-    for (const b of buckets.values()) {
-      ctx.globalAlpha = b.a / b.pts.length;
-      ctx.strokeStyle = `rgb(${b.r},${b.g},${b.b})`;
-      ctx.beginPath();
-      for (const p of b.pts) {
-        const h = p.hist;
-        if (h.length < 4) continue;
-        ctx.moveTo(h[0], h[1]);
-        for (let i = 2; i < h.length; i += 2) ctx.lineTo(h[i], h[i + 1]);
+      const tw = 0.8 + 0.4 * Math.sin(now * 0.001 * p.pulse + p.phase); // 缓慢呼吸
+      let a = p.alpha * tw;
+      if (mouse.active) {
+        const d = Math.hypot(p.x - mouse.x, p.y - mouse.y);
+        const R = Math.min(W, H) * 0.32;
+        if (d < R) a *= 1 + (1 - d / R) * 0.5;     // 靠近鼠标的微尘更亮
       }
-      ctx.stroke();
+      ctx.globalAlpha = Math.max(0.02, a);
+      const s = spriteFor(p.r, p.g, p.b);
+      const sz = p.size * 4;
+      ctx.drawImage(s, p.x - sz / 2, p.y - sz / 2, sz, sz);
     }
-    ctx.globalAlpha = 1;
-    // 风眼指示圈：鼠标活跃时清晰可见，停住后淡出
-    if (mouse.active) {
-      const idle = Math.max(0, 1 - (performance.now() - mouse.lastMove) / 1400);
-      if (idle > 0.02) {
-        const R = Math.min(W, H) * 0.34;
-        ctx.globalAlpha = 0.4 * idle;
-        ctx.strokeStyle = 'rgba(94,234,212,.55)';
-        ctx.setLineDash([2, 8]);
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(mouse.x, mouse.y, R, 0, Math.PI * 2); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.globalAlpha = 0.9 * idle;
-        ctx.strokeStyle = 'rgba(94,234,212,.95)';
-        ctx.beginPath(); ctx.arc(mouse.x, mouse.y, 2.5, 0, Math.PI * 2); ctx.stroke();
-      }
-    }
-    for (let i = shocks.length - 1; i >= 0; i--) {
-      const sh = shocks[i];
-      sh.r += sh.vr; sh.power *= 0.93;
-      if (sh.power < 0.05) { shocks.splice(i, 1); continue; }
-      ctx.globalAlpha = sh.power * 0.55;
-      ctx.strokeStyle = 'rgba(125,211,252,1)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(sh.x, sh.y, sh.r, 0, Math.PI * 2); ctx.stroke();
-    }
+    ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
   }
 
@@ -229,7 +205,6 @@ const field = (() => {
   function frame(now) {
     if (!running) return;
     const dt = Math.min(50, now - last); last = now; t += dt;
-    if (mouse.active) { mouse.vx = mouse.x - mouse.px; mouse.vy = mouse.y - mouse.py; mouse.px = mouse.x; mouse.py = mouse.y; }
     for (const p of particles) updateParticle(p, t);
     draw();
     const eye = $('#eyeState');
@@ -248,12 +223,9 @@ const field = (() => {
 
   window.addEventListener('resize', resize);
   window.addEventListener('pointermove', (e) => {
-    if (!mouse.active) { mouse.px = e.clientX; mouse.py = e.clientY; mouse.active = true; }
+    if (!mouse.active) mouse.active = true;
     mouse.x = e.clientX; mouse.y = e.clientY; mouse.lastMove = performance.now();
   }, { passive: true });
-  window.addEventListener('pointerdown', (e) => {
-    if (Math.random() < 0.3) shocks.push({ x: e.clientX, y: e.clientY, r: 4, vr: 7.5, power: 1 });
-  });
   document.addEventListener('visibilitychange', () => {
     running = !document.hidden;
     if (running) { last = performance.now(); requestAnimationFrame(frame); }
