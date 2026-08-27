@@ -487,7 +487,19 @@ function renderTags() {
 function initToolbar() {
   renderTags();
   const input = $('#searchInput');
-  input.addEventListener('input', () => { state.query = input.value; renderCards(); });
+  const clearBtn = $('#searchClear');
+  input.addEventListener('input', () => {
+    state.query = input.value;
+    clearBtn.hidden = !input.value;
+    renderCards();
+  });
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    state.query = '';
+    clearBtn.hidden = true;
+    renderCards();
+    input.focus();
+  });
   $$('.sort-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       $$('.sort-btn').forEach((b) => b.classList.toggle('is-active', b === btn));
@@ -782,6 +794,12 @@ function initKeys() {
     if (e.key === '/' && !typing) { e.preventDefault(); quickSearch.open(); return; }
     if (e.key === '?' && !typing) { e.preventDefault(); $('#helpModal').hidden = false; return; }
     if (e.key.toLowerCase() === 't' && !typing) { theme.toggle(); return; }
+    if (typing && e.key === 'Escape' && e.target === $('#searchInput')) {
+      const si = $('#searchInput');
+      if (si.value) { si.value = ''; state.query = ''; $('#searchClear').hidden = true; renderCards(); }
+      si.blur();
+      return;
+    }
     if (typing) return;
     if (state.view === 'reader' && state.current) {
       const list = sorted(state.articles.slice());
